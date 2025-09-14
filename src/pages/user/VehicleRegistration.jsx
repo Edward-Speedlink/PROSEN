@@ -8,7 +8,6 @@ import Button from "../../components/ui/Button"
 import FormInput from "../../components/auth/FormInput"
 import StatusBadge from "../../components/ui/StatusBadge"
 import LoadingSpinner from "../../components/ui/LoadingSpinner"
-import { between  } from "polished" // Import clamp from polished library
 
 const PageContainer = styled.div`
   width: 100%;
@@ -194,12 +193,18 @@ const VehicleRegistration = () => {
   ])
 
   const [formData, setFormData] = useState({
+    licencePlate: "",
+    vinChassis: "",
+    engineNumber: "",
     make: "",
     model: "",
+    vehicleType: "",
     year: "",
-    plate: "",
-    vin: "",
+    vehicleUsage: "",
     color: "",
+    sourceOfVehicle: "",
+    stateLicencingOffice: "",
+    stateRequestingFrom: "",
   })
 
   const [errors, setErrors] = useState({})
@@ -222,19 +227,21 @@ const VehicleRegistration = () => {
   const validateForm = () => {
     const newErrors = {}
 
+    if (!formData.licencePlate) newErrors.licencePlate = "Licence plate is required"
+    if (!formData.vinChassis) newErrors.vinChassis = "VIN/Chassis number is required"
+    if (!formData.engineNumber) newErrors.engineNumber = "Engine number is required"
     if (!formData.make) newErrors.make = "Make is required"
     if (!formData.model) newErrors.model = "Model is required"
+    if (!formData.vehicleType) newErrors.vehicleType = "Vehicle type is required"
     if (!formData.year) newErrors.year = "Year is required"
-    if (!formData.plate) newErrors.plate = "License plate is required"
-    if (!formData.vin) newErrors.vin = "VIN is required"
+    if (!formData.vehicleUsage) newErrors.vehicleUsage = "Vehicle usage is required"
     if (!formData.color) newErrors.color = "Color is required"
+    if (!formData.sourceOfVehicle) newErrors.sourceOfVehicle = "Source of vehicle is required"
+    if (!formData.stateLicencingOffice) newErrors.stateLicencingOffice = "State licencing office is required"
+    if (!formData.stateRequestingFrom) newErrors.stateRequestingFrom = "State requesting from is required"
 
-    if (formData.year && (formData.year < 1900 || formData.year > new Date().getFullYear() + 1)) {
-      newErrors.year = "Please enter a valid year"
-    }
-
-    if (formData.vin && formData.vin.length !== 17) {
-      newErrors.vin = "VIN must be 17 characters"
+    if (formData.vinChassis && formData.vinChassis.length !== 17) {
+      newErrors.vinChassis = "VIN must be 17 characters"
     }
 
     setErrors(newErrors)
@@ -261,12 +268,18 @@ const VehicleRegistration = () => {
 
       setVehicles((prev) => [...prev, newVehicle])
       setFormData({
+        licencePlate: "",
+        vinChassis: "",
+        engineNumber: "",
         make: "",
         model: "",
+        vehicleType: "",
         year: "",
-        plate: "",
-        vin: "",
+        vehicleUsage: "",
         color: "",
+        sourceOfVehicle: "",
+        stateLicencingOffice: "",
+        stateRequestingFrom: "",
       })
       setShowForm(false)
     } catch (error) {
@@ -278,6 +291,77 @@ const VehicleRegistration = () => {
 
   const handleDeleteVehicle = (vehicleId) => {
     setVehicles((prev) => prev.filter((vehicle) => vehicle.id !== vehicleId))
+  }
+
+  const dropdownOptions = {
+    makes: [
+      "Toyota",
+      "Honda",
+      "Ford",
+      "Chevrolet",
+      "Nissan",
+      "BMW",
+      "Mercedes-Benz",
+      "Audi",
+      "Volkswagen",
+      "Hyundai",
+      "Kia",
+      "Mazda",
+      "Subaru",
+      "Lexus",
+      "Infiniti",
+      "Acura",
+    ],
+    models: {
+      Toyota: ["Camry", "Corolla", "RAV4", "Highlander", "Prius", "Sienna", "Tacoma", "Tundra"],
+      Honda: ["Civic", "Accord", "CR-V", "Pilot", "Odyssey", "Ridgeline", "HR-V", "Passport"],
+      Ford: ["F-150", "Escape", "Explorer", "Mustang", "Edge", "Expedition", "Ranger", "Bronco"],
+      // Add more models for other makes as needed
+    },
+    vehicleTypes: ["Sedan", "SUV", "Truck", "Coupe", "Convertible", "Hatchback", "Wagon", "Van", "Motorcycle", "Bus"],
+    years: Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i),
+    vehicleUsage: ["Personal", "Commercial", "Government", "Rental", "Fleet", "Emergency Services", "Public Transport"],
+    colors: ["White", "Black", "Silver", "Gray", "Red", "Blue", "Green", "Yellow", "Orange", "Brown", "Purple", "Gold"],
+    sources: ["Dealership", "Private Sale", "Auction", "Import", "Lease", "Government", "Insurance", "Manufacturer"],
+    states: [
+      "Abia",
+      "Adamawa",
+      "Akwa Ibom",
+      "Anambra",
+      "Bauchi",
+      "Bayelsa",
+      "Benue",
+      "Borno",
+      "Cross River",
+      "Delta",
+      "Ebonyi",
+      "Edo",
+      "Ekiti",
+      "Enugu",
+      "FCT",
+      "Gombe",
+      "Imo",
+      "Jigawa",
+      "Kaduna",
+      "Kano",
+      "Katsina",
+      "Kebbi",
+      "Kogi",
+      "Kwara",
+      "Lagos",
+      "Nasarawa",
+      "Niger",
+      "Ogun",
+      "Ondo",
+      "Osun",
+      "Oyo",
+      "Plateau",
+      "Rivers",
+      "Sokoto",
+      "Taraba",
+      "Yobe",
+      "Zamfara",
+    ],
   }
 
   return (
@@ -300,66 +384,308 @@ const VehicleRegistration = () => {
           <form onSubmit={handleSubmit}>
             <FormGrid>
               <FormSection>
-                <h3>Vehicle Information</h3>
+                <h3>Vehicle Identification</h3>
                 <FormInput
-                  label="Make"
-                  name="make"
-                  placeholder="e.g., Toyota, Honda, Ford"
-                  value={formData.make}
+                  label="Licence Plate Number"
+                  name="licencePlate"
+                  placeholder="e.g., ABC-123-XY"
+                  value={formData.licencePlate}
                   onChange={handleInputChange}
-                  error={errors.make}
+                  error={errors.licencePlate}
                   required
                 />
                 <FormInput
-                  label="Model"
-                  name="model"
-                  placeholder="e.g., Camry, Civic, F-150"
-                  value={formData.model}
+                  label="VIN/Chassis Number"
+                  name="vinChassis"
+                  placeholder="17-character VIN/Chassis number"
+                  value={formData.vinChassis}
                   onChange={handleInputChange}
-                  error={errors.model}
+                  error={errors.vinChassis}
                   required
                 />
                 <FormInput
-                  label="Year"
-                  name="year"
-                  type="number"
-                  placeholder="e.g., 2022"
-                  value={formData.year}
+                  label="Engine Number"
+                  name="engineNumber"
+                  placeholder="Engine identification number"
+                  value={formData.engineNumber}
                   onChange={handleInputChange}
-                  error={errors.year}
-                  required
-                />
-                <FormInput
-                  label="Color"
-                  name="color"
-                  placeholder="e.g., Silver, Blue, Black"
-                  value={formData.color}
-                  onChange={handleInputChange}
-                  error={errors.color}
+                  error={errors.engineNumber}
                   required
                 />
               </FormSection>
 
               <FormSection>
-                <h3>Registration Details</h3>
-                <FormInput
-                  label="License Plate"
-                  name="plate"
-                  placeholder="e.g., ABC-123"
-                  value={formData.plate}
-                  onChange={handleInputChange}
-                  error={errors.plate}
-                  required
-                />
-                <FormInput
-                  label="VIN Number"
-                  name="vin"
-                  placeholder="17-character VIN"
-                  value={formData.vin}
-                  onChange={handleInputChange}
-                  error={errors.vin}
-                  required
-                />
+                <h3>Vehicle Specifications</h3>
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#F4F6F8" }}>
+                    Make (Manufacturer) *
+                  </label>
+                  <select
+                    name="make"
+                    value={formData.make}
+                    onChange={handleInputChange}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: errors.make ? "2px solid #FF6B47" : "2px solid #2D3748",
+                      backgroundColor: "#1A202C",
+                      color: "#F4F6F8",
+                      fontSize: "16px",
+                    }}
+                  >
+                    <option value="">Select Manufacturer</option>
+                    {dropdownOptions.makes.map((make) => (
+                      <option key={make} value={make}>
+                        {make}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.make && <span style={{ color: "#FF6B47", fontSize: "14px" }}>{errors.make}</span>}
+                </div>
+
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#F4F6F8" }}>
+                    Model *
+                  </label>
+                  <select
+                    name="model"
+                    value={formData.model}
+                    onChange={handleInputChange}
+                    disabled={!formData.make}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: errors.model ? "2px solid #FF6B47" : "2px solid #2D3748",
+                      backgroundColor: "#1A202C",
+                      color: "#F4F6F8",
+                      fontSize: "16px",
+                      opacity: !formData.make ? 0.5 : 1,
+                    }}
+                  >
+                    <option value="">Select Model</option>
+                    {formData.make &&
+                      dropdownOptions.models[formData.make]?.map((model) => (
+                        <option key={model} value={model}>
+                          {model}
+                        </option>
+                      ))}
+                  </select>
+                  {errors.model && <span style={{ color: "#FF6B47", fontSize: "14px" }}>{errors.model}</span>}
+                </div>
+
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#F4F6F8" }}>
+                    Vehicle Type *
+                  </label>
+                  <select
+                    name="vehicleType"
+                    value={formData.vehicleType}
+                    onChange={handleInputChange}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: errors.vehicleType ? "2px solid #FF6B47" : "2px solid #2D3748",
+                      backgroundColor: "#1A202C",
+                      color: "#F4F6F8",
+                      fontSize: "16px",
+                    }}
+                  >
+                    <option value="">Select Vehicle Type</option>
+                    {dropdownOptions.vehicleTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.vehicleType && (
+                    <span style={{ color: "#FF6B47", fontSize: "14px" }}>{errors.vehicleType}</span>
+                  )}
+                </div>
+
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#F4F6F8" }}>
+                    Year of Manufacture *
+                  </label>
+                  <select
+                    name="year"
+                    value={formData.year}
+                    onChange={handleInputChange}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: errors.year ? "2px solid #FF6B47" : "2px solid #2D3748",
+                      backgroundColor: "#1A202C",
+                      color: "#F4F6F8",
+                      fontSize: "16px",
+                    }}
+                  >
+                    <option value="">Select Year</option>
+                    {dropdownOptions.years.map((year) => (
+                      <option key={year} value={year}>
+                        {year}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.year && <span style={{ color: "#FF6B47", fontSize: "14px" }}>{errors.year}</span>}
+                </div>
+              </FormSection>
+
+              <FormSection>
+                <h3>Usage & Details</h3>
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#F4F6F8" }}>
+                    Vehicle Usage *
+                  </label>
+                  <select
+                    name="vehicleUsage"
+                    value={formData.vehicleUsage}
+                    onChange={handleInputChange}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: errors.vehicleUsage ? "2px solid #FF6B47" : "2px solid #2D3748",
+                      backgroundColor: "#1A202C",
+                      color: "#F4F6F8",
+                      fontSize: "16px",
+                    }}
+                  >
+                    <option value="">Select Usage</option>
+                    {dropdownOptions.vehicleUsage.map((usage) => (
+                      <option key={usage} value={usage}>
+                        {usage}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.vehicleUsage && (
+                    <span style={{ color: "#FF6B47", fontSize: "14px" }}>{errors.vehicleUsage}</span>
+                  )}
+                </div>
+
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#F4F6F8" }}>
+                    Color *
+                  </label>
+                  <select
+                    name="color"
+                    value={formData.color}
+                    onChange={handleInputChange}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: errors.color ? "2px solid #FF6B47" : "2px solid #2D3748",
+                      backgroundColor: "#1A202C",
+                      color: "#F4F6F8",
+                      fontSize: "16px",
+                    }}
+                  >
+                    <option value="">Select Color</option>
+                    {dropdownOptions.colors.map((color) => (
+                      <option key={color} value={color}>
+                        {color}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.color && <span style={{ color: "#FF6B47", fontSize: "14px" }}>{errors.color}</span>}
+                </div>
+
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#F4F6F8" }}>
+                    Source of Vehicle *
+                  </label>
+                  <select
+                    name="sourceOfVehicle"
+                    value={formData.sourceOfVehicle}
+                    onChange={handleInputChange}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: errors.sourceOfVehicle ? "2px solid #FF6B47" : "2px solid #2D3748",
+                      backgroundColor: "#1A202C",
+                      color: "#F4F6F8",
+                      fontSize: "16px",
+                    }}
+                  >
+                    <option value="">Select Source</option>
+                    {dropdownOptions.sources.map((source) => (
+                      <option key={source} value={source}>
+                        {source}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.sourceOfVehicle && (
+                    <span style={{ color: "#FF6B47", fontSize: "14px" }}>{errors.sourceOfVehicle}</span>
+                  )}
+                </div>
+              </FormSection>
+
+              <FormSection>
+                <h3>Registration Location</h3>
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#F4F6F8" }}>
+                    State Licencing Office *
+                  </label>
+                  <select
+                    name="stateLicencingOffice"
+                    value={formData.stateLicencingOffice}
+                    onChange={handleInputChange}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: errors.stateLicencingOffice ? "2px solid #FF6B47" : "2px solid #2D3748",
+                      backgroundColor: "#1A202C",
+                      color: "#F4F6F8",
+                      fontSize: "16px",
+                    }}
+                  >
+                    <option value="">Select State</option>
+                    {dropdownOptions.states.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.stateLicencingOffice && (
+                    <span style={{ color: "#FF6B47", fontSize: "14px" }}>{errors.stateLicencingOffice}</span>
+                  )}
+                </div>
+
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#F4F6F8" }}>
+                    State Requesting From *
+                  </label>
+                  <select
+                    name="stateRequestingFrom"
+                    value={formData.stateRequestingFrom}
+                    onChange={handleInputChange}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: errors.stateRequestingFrom ? "2px solid #FF6B47" : "2px solid #2D3748",
+                      backgroundColor: "#1A202C",
+                      color: "#F4F6F8",
+                      fontSize: "16px",
+                    }}
+                  >
+                    <option value="">Select State</option>
+                    {dropdownOptions.states.map((state) => (
+                      <option key={state} value={state}>
+                        {state}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.stateRequestingFrom && (
+                    <span style={{ color: "#FF6B47", fontSize: "14px" }}>{errors.stateRequestingFrom}</span>
+                  )}
+                </div>
               </FormSection>
             </FormGrid>
 

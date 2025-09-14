@@ -7,15 +7,64 @@ import Button from "../../components/ui/Button"
 import StatusBadge from "../../components/ui/StatusBadge"
 import LoadingSpinner from "../../components/ui/LoadingSpinner"
 
+const PageContainer = styled.div`
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 32px);
+  min-height: calc(100vh - 140px);
+  
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+`
+
+const PageHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: clamp(24px, 5vw, 40px);
+  gap: 20px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+  
+  .header-content {
+    h1 {
+      font-size: clamp(24px, 4vw, 32px);
+      font-weight: 700;
+      color: #ECEFF1;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+    
+    p {
+      color: #90A4AE;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+  }
+  
+  .header-actions {
+    @media (max-width: 768px) {
+      align-self: flex-start;
+    }
+  }
+`
+
 const TrackingContainer = styled.div`
   display: grid;
-  grid-template-columns: 1fr 350px;
-  gap: ${(props) => props.theme.spacing.xl};
-  height: calc(100vh - 200px);
+  grid-template-columns: 1fr 380px;
+  gap: clamp(20px, 3vw, 32px);
+  height: calc(100vh - 280px);
+  min-height: 600px;
   
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
     height: auto;
+    min-height: auto;
   }
 `
 
@@ -29,6 +78,7 @@ const MapContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   
   .map-placeholder {
     text-align: center;
@@ -62,6 +112,7 @@ const MapContainer = styled.div`
     padding: ${(props) => props.theme.spacing.md};
     border-radius: ${(props) => props.theme.borderRadius.md};
     border: 1px solid ${(props) => props.theme.colors.primary.neonCyan}30;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     
     .tracking-info {
       display: flex;
@@ -84,9 +135,33 @@ const VehiclePanel = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${(props) => props.theme.spacing.lg};
+  max-height: calc(100vh - 280px);
+  overflow-y: auto;
+  padding-right: 8px;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: ${(props) => props.theme.colors.dark.surface};
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: ${(props) => props.theme.colors.primary.neonCyan}40;
+    border-radius: 3px;
+    
+    &:hover {
+      background: ${(props) => props.theme.colors.primary.neonCyan}60;
+    }
+  }
   
   @media (max-width: 1024px) {
     grid-row: 1;
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
   }
 `
 
@@ -94,10 +169,13 @@ const VehicleCard = styled(Card)`
   cursor: pointer;
   transition: all ${(props) => props.theme.transitions.fast};
   border: 2px solid ${(props) => (props.isSelected ? props.theme.colors.primary.neonCyan : "transparent")};
+  box-shadow: ${(props) =>
+    props.isSelected ? `0 8px 32px ${props.theme.colors.primary.neonCyan}20` : "0 4px 16px rgba(0, 0, 0, 0.2)"};
   
   &:hover {
     border-color: ${(props) => props.theme.colors.primary.neonCyan}60;
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
   }
   
   .vehicle-header {
@@ -119,6 +197,7 @@ const VehicleCard = styled(Card)`
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: all ${(props) => props.theme.transitions.fast};
         
         svg {
           width: 20px;
@@ -132,6 +211,7 @@ const VehicleCard = styled(Card)`
           font-weight: 600;
           color: ${(props) => props.theme.colors.dark.text};
           margin-bottom: 2px;
+          font-size: 15px;
         }
         
         .plate {
@@ -154,24 +234,37 @@ const VehicleCard = styled(Card)`
       align-items: center;
       gap: ${(props) => props.theme.spacing.sm};
       font-size: 13px;
+      padding: 4px 0;
       
       svg {
         width: 14px;
         height: 14px;
         color: ${(props) => props.theme.colors.supportive.coolGray};
+        flex-shrink: 0;
       }
       
       .label {
         color: ${(props) => props.theme.colors.supportive.coolGray};
         min-width: 60px;
+        flex-shrink: 0;
       }
       
       .value {
         color: ${(props) => props.theme.colors.dark.text};
         font-weight: 500;
+        flex: 1;
       }
     }
   }
+  
+  ${(props) =>
+    props.isSelected &&
+    `
+    .vehicle-icon {
+      background: ${props.theme.colors.primary.neonCyan}30;
+      transform: scale(1.05);
+    }
+  `}
 `
 
 const VehicleTracking = () => {
@@ -181,7 +274,6 @@ const VehicleTracking = () => {
   const [isTracking, setIsTracking] = useState(false)
 
   useEffect(() => {
-    // Simulate loading vehicle data
     setTimeout(() => {
       const mockVehicles = [
         {
@@ -227,7 +319,6 @@ const VehicleTracking = () => {
     setIsTracking(true)
     setTimeout(() => {
       setIsTracking(false)
-      // Update last update time
       setVehicles((prev) =>
         prev.map((v) => ({
           ...v,
@@ -242,26 +333,28 @@ const VehicleTracking = () => {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
-        <LoadingSpinner size="lg" text="Loading vehicle tracking..." />
-      </div>
+      <PageContainer>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
+          <LoadingSpinner size="lg" text="Loading vehicle tracking..." />
+        </div>
+      </PageContainer>
     )
   }
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-        <div>
-          <h1 style={{ fontSize: "24px", fontWeight: "700", color: "#ECEFF1", marginBottom: "8px" }}>
-            Vehicle Tracking
-          </h1>
-          <p style={{ color: "#90A4AE" }}>Real-time location monitoring for your registered vehicles</p>
+    <PageContainer>
+      <PageHeader>
+        <div className="header-content">
+          <h1>Vehicle Tracking</h1>
+          <p>Real-time location monitoring for your registered vehicles</p>
         </div>
-        <Button variant="primary" onClick={handleRefresh} disabled={isTracking}>
-          <RefreshCw style={{ width: "16px", height: "16px", marginRight: "8px" }} />
-          {isTracking ? "Updating..." : "Refresh"}
-        </Button>
-      </div>
+        <div className="header-actions">
+          <Button variant="primary" onClick={handleRefresh} disabled={isTracking}>
+            <RefreshCw style={{ width: "16px", height: "16px", marginRight: "8px" }} />
+            {isTracking ? "Updating..." : "Refresh"}
+          </Button>
+        </div>
+      </PageHeader>
 
       <TrackingContainer>
         <MapContainer>
@@ -329,7 +422,7 @@ const VehicleTracking = () => {
           ))}
         </VehiclePanel>
       </TrackingContainer>
-    </div>
+    </PageContainer>
   )
 }
 
