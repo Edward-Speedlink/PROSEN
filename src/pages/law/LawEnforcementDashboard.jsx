@@ -331,6 +331,8 @@ const LawEnforcementDashboard = () => {
     { name: "Drone Fleet", count: "8/12 Active", icon: <Drone />, status: "active" },
     { name: "Database", count: "Connected", icon: <Activity />, status: "connected" },
     { name: "Face Recognition", count: "Processing", icon: <Eye />, status: "active" },
+    { name: "Data Analysis ", count: "Processing", icon: <Eye />, status: "active" },
+
   ]
 
   if (loading) {
@@ -432,10 +434,23 @@ const LawEnforcementDashboard = () => {
           <span className="action-label">Drone Control</span>
         </ActionButton>
 
+        <ActionButton variant="outline" onClick={() => navigate("/plate-recognition")}>
+  <Eye /> {/* you can swap this for a better icon later */}
+  <span className="action-label">Plate Recognition</span>
+</ActionButton>
+
         <ActionButton variant="outline" onClick={() => navigate("/camera-search")}>
           <Map />
           <span className="action-label">Camera Search</span>
         </ActionButton>
+
+       
+
+<ActionButton variant="outline" onClick={() => navigate("/data-analysis")}>
+  <Activity /> {/* good icon for analysis */}
+  <span className="action-label">Data Analysis</span>
+</ActionButton>
+
       </QuickActionsGrid>
 
       <AlertsSection>

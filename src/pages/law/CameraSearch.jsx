@@ -3,6 +3,9 @@
 import { useState } from "react"
 import styled from "styled-components"
 import { Camera, Search, MapPin, Calendar, Eye, Download, Share2 } from "lucide-react"
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
+import L from "leaflet"
+
 
 const CameraSearchContainer = styled.div`
   padding: clamp(16px, 4vw, 32px);
@@ -260,6 +263,39 @@ const FilterOption = styled.label`
   }
 `
 
+// Add this new styled wrapper
+const MainLayout = styled.div`
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+  }
+`;
+
+const MapWrapper = styled.div`
+  flex: 1;
+  min-width: 500px;
+  height: 500px;
+  border-radius: ${(props) => props.theme.borderRadius.lg};
+  overflow: hidden;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  background: ${(props) => props.theme.colors.primary.darkNavy};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+// optional: custom camera marker
+const cameraIcon = new L.Icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/149/149060.png",
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+  popupAnchor: [0, -30],
+})
+
+
 const CameraSearch = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [locationFilter, setLocationFilter] = useState("")
@@ -273,6 +309,7 @@ const CameraSearch = () => {
       lastRecording: "2 min ago",
       resolution: "4K",
       type: "Fixed",
+      coords: [9.0765, 7.3986], // Abuja
     },
     {
       id: 2,
@@ -282,6 +319,7 @@ const CameraSearch = () => {
       lastRecording: "5 min ago",
       resolution: "1080p",
       type: "PTZ",
+      coords: [9.0765, 7.3986], // Abuja
     },
     {
       id: 3,
@@ -291,6 +329,7 @@ const CameraSearch = () => {
       lastRecording: "2 hours ago",
       resolution: "720p",
       type: "Fixed",
+      coords: [9.0765, 7.3986], // Abuja
     },
     {
       id: 4,
@@ -300,6 +339,7 @@ const CameraSearch = () => {
       lastRecording: "1 min ago",
       resolution: "4K",
       type: "PTZ",
+      coords: [9.0765, 7.3986], // Abuja
     },
     {
       id: 5,
@@ -309,6 +349,7 @@ const CameraSearch = () => {
       lastRecording: "1 day ago",
       resolution: "1080p",
       type: "Fixed",
+      coords: [9.0765, 7.3986], // Abuja
     },
     {
       id: 6,
@@ -318,6 +359,7 @@ const CameraSearch = () => {
       lastRecording: "30 sec ago",
       resolution: "4K",
       type: "Dome",
+      coords: [9.0765, 7.3986], // Abuja
     },
   ])
 
@@ -381,7 +423,94 @@ const CameraSearch = () => {
         </SearchGrid>
       </SearchPanel>
 
-      <ResultsContainer>
+      {/* <ResultsContainer> */}
+      <MainLayout>
+        <FilterSidebar>
+          <FilterSection>
+            <FilterTitle>Camera Status</FilterTitle>
+            <FilterOption>
+              <input type="checkbox" />
+              Online (4)
+            </FilterOption>
+            <FilterOption>
+              <input type="checkbox" />
+              Offline (1)
+            </FilterOption>
+            <FilterOption>
+              <input type="checkbox" />
+              Maintenance (1)
+            </FilterOption>
+          </FilterSection>
+
+          <FilterSection>
+            <FilterTitle>Camera Type</FilterTitle>
+            <FilterOption>
+              <input type="checkbox" />
+              Fixed (3)
+            </FilterOption>
+            <FilterOption>
+              <input type="checkbox" />
+              PTZ (2)
+            </FilterOption>
+            <FilterOption>
+              <input type="checkbox" />
+              Dome (1)
+            </FilterOption>
+          </FilterSection>
+
+          <FilterSection>
+            <FilterTitle>Resolution</FilterTitle>
+            <FilterOption>
+              <input type="checkbox" />
+              4K (3)
+            </FilterOption>
+            <FilterOption>
+              <input type="checkbox" />
+              1080p (2)
+            </FilterOption>
+            <FilterOption>
+              <input type="checkbox" />
+              720p (1)
+            </FilterOption>
+          </FilterSection>
+        </FilterSidebar>
+
+        {/* Center Map */}
+        <MapWrapper>
+  <MapContainer
+    center={[9.082, 8.6753]} // Default center (Nigeria coords as example)
+    zoom={6}
+    style={{ height: "100%", width: "100%" }}
+  >
+    <TileLayer
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+    />
+
+    {cameras.map((camera) => (
+      <Marker
+        key={camera.id}
+        position={
+          camera.coords || [9.082, 8.6753] // add coords to each camera later
+        }
+        icon={cameraIcon}
+      >
+        <Popup>
+          <b>{camera.name}</b>
+          <br />
+          {camera.location}
+          <br />
+          Status: {camera.status}
+        </Popup>
+      </Marker>
+    ))}
+  </MapContainer>
+</MapWrapper>
+  {/* <MapWrapper>
+    
+    <p style={{ color: "#00e5ff" }}>Map View Placeholder</p>
+  </MapWrapper> */}
+
         <ResultsGrid>
           {cameras.map((camera) => (
             <CameraCard key={camera.id}>
@@ -439,7 +568,7 @@ const CameraSearch = () => {
           ))}
         </ResultsGrid>
 
-        <FilterSidebar>
+        {/* <FilterSidebar>
           <FilterSection>
             <FilterTitle>Camera Status</FilterTitle>
             <FilterOption>
@@ -487,8 +616,9 @@ const CameraSearch = () => {
               720p (1)
             </FilterOption>
           </FilterSection>
-        </FilterSidebar>
-      </ResultsContainer>
+        </FilterSidebar> */}
+      {/* </ResultsContainer> */}
+      </MainLayout>
     </CameraSearchContainer>
   )
 }

@@ -17,6 +17,8 @@ import ComplaintsManagement from "../pages/law/ComplaintsManagement"
 import FaceRecognition from "../pages/law/FaceRecognition"
 import DroneDispatch from "../pages/law/DroneDispatch"
 import CameraSearch from "../pages/law/CameraSearch"
+import PlateRecognition from "../pages/law/PlateRecognition"
+import DataAnalysis from "../pages/law/DataAnalysis"
 
 
 const ProtectedRoute = ({ children, requiredUserType }) => {
@@ -139,6 +141,30 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/plate-recognition"
+        element={
+          <ProtectedRoute requiredUserType="law_enforcement">
+            <PlateRecognition />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/data-analysis"
+        element={
+          <ProtectedRoute requiredUserType="law_enforcement">
+            <DataAnalysis />
+          </ProtectedRoute>
+        }
+      />
+      {/* <Route
+        path="/camera-search"
+        element={
+          <ProtectedRoute requiredUserType="law_enforcement">
+            <CameraSearch />
+          </ProtectedRoute>
+        }
+      /> */}
 
       {/* Catch all route */}
       <Route path="*" element={<Navigate to="/" replace />} />

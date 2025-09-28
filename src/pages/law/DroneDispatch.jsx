@@ -3,6 +3,8 @@
 import { useState } from "react"
 import styled from "styled-components"
 import { Bone as Drone, MapPin, Battery, Signal, Play, Pause, RotateCcw, Camera, Navigation } from "lucide-react"
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+
 
 const DroneDispatchContainer = styled.div`
   padding: clamp(16px, 4vw, 32px);
@@ -40,14 +42,14 @@ const MainGrid = styled.div`
   }
 `
 
-const MapContainer = styled.div`
-  background: ${(props) => props.theme.colors.dark.surface};
-  border-radius: ${(props) => props.theme.borderRadius.lg};
-  padding: clamp(16px, 3vw, 24px);
-  border: 1px solid rgba(0, 229, 255, 0.1);
-  min-height: 600px;
-  position: relative;
-`
+// const MapContainer = styled.div`
+//   background: ${(props) => props.theme.colors.dark.surface};
+//   border-radius: ${(props) => props.theme.borderRadius.lg};
+//   padding: clamp(16px, 3vw, 24px);
+//   border: 1px solid rgba(0, 229, 255, 0.1);
+//   min-height: 600px;
+//   position: relative;
+// `
 
 const MapHeader = styled.div`
   display: flex;
@@ -278,6 +280,24 @@ const MissionInput = styled.input`
     color: ${(props) => props.theme.colors.dark.textSecondary};
   }
 `
+const MapWrapper = styled.div`
+  .leaflet-container {
+    width: 100%;
+    height: 600px;
+    border-radius: ${(props) => props.theme.borderRadius.md};
+    box-shadow: ${(props) => props.theme.shadows.md};
+  }
+`;
+
+const MapSection = styled.div`
+  background: ${(props) => props.theme.colors.dark.surface};
+  border-radius: ${(props) => props.theme.borderRadius.lg};
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid rgba(0, 229, 255, 0.1);
+  min-height: 600px;
+  position: relative;
+`
+
 
 const DroneDispatch = () => {
   const [selectedDrone, setSelectedDrone] = useState(null)
@@ -349,7 +369,8 @@ const DroneDispatch = () => {
       </Header>
 
       <MainGrid>
-        <MapContainer>
+        {/* <MapContainer> */}
+        <MapSection>
           <MapHeader>
             <MapTitle>Operational Area Map</MapTitle>
             <div style={{ fontSize: "12px", color: "#90A4AE" }}>
@@ -357,7 +378,7 @@ const DroneDispatch = () => {
             </div>
           </MapHeader>
 
-          <MapPlaceholder>
+          {/* <MapPlaceholder>
             <div style={{ color: "rgba(0, 229, 255, 0.3)", textAlign: "center" }}>
               <MapPin size={48} />
               <div style={{ marginTop: "12px", fontSize: "14px" }}>Interactive Map View</div>
@@ -371,8 +392,37 @@ const DroneDispatch = () => {
                   {drone.id}
                 </DroneMarker>
               ))}
-          </MapPlaceholder>
-        </MapContainer>
+          </MapPlaceholder> */}
+
+        <MapWrapper>
+  <MapContainer center={[6.5244, 3.3792]} zoom={13} scrollWheelZoom>
+    <TileLayer
+      attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    />
+    {drones.filter((d) => d.position).map((drone) => {
+      const lat = 6.52 + drone.position.top * 0.001;
+      const lng = 3.37 + drone.position.left * 0.001;
+      return (
+        <Marker
+          key={drone.id}
+          position={[lat, lng]}
+          eventHandlers={{ click: () => handleDroneSelect(drone) }}
+        >
+          <Popup>
+            <strong>{drone.name}</strong>
+            <br />
+            Battery: {drone.battery}%<br />
+            Altitude: {drone.altitude}m
+          </Popup>
+        </Marker>
+      );
+    })}
+  </MapContainer>
+</MapWrapper>
+
+        {/* </MapContainer> */}
+        </MapSection>
 
         <ControlPanel>
           <DroneList>
