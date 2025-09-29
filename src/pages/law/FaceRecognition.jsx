@@ -391,7 +391,7 @@ const FaceRecognition = ({ onNavigate }) => {
       <PageHeader>
         <div className="header-left">
           <BackButton onClick={handleBack}>
-            <ArrowLeft size={16} />
+            <span> <ArrowLeft size={16} /> </span>
           </BackButton>
           <Header>
             <Title>Face Recognition System</Title>

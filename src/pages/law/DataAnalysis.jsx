@@ -21,6 +21,8 @@ import {
   Shield,
   Radio,
 } from "lucide-react"
+import { MapContainer as LeafletMap, TileLayer, CircleMarker, Popup } from "react-leaflet";
+
 
 const slideInAnimation = keyframes`
   0% { transform: translateY(30px); opacity: 0; }
@@ -207,88 +209,6 @@ const ChartLegend = styled.div`
   gap: 16px;
   margin-top: 16px;
   justify-content: center;
-`
-
-const LegendItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-`
-
-const LegendColor = styled.div`
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  background: ${(props) => props.$color};
-`
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: ${fadeInAnimation} 0.3s ease-out;
-`
-
-const ModalContent = styled.div`
-  background: #1e1e2e;
-  border-radius: 12px;
-  padding: 32px;
-  border: 1px solid rgba(0, 229, 255, 0.2);
-  max-width: 500px;
-  width: 90%;
-  animation: ${slideInAnimation} 0.3s ease-out;
-`
-
-const ModalHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-`
-
-const ModalTitle = styled.h3`
-  color: #00E5FF;
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-`
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  color: #a0a0a0;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    color: #00E5FF;
-    background: rgba(0, 229, 255, 0.1);
-  }
-`
-
-const SystemOverview = styled.div`
-  background: #1e1e2e;
-  border-radius: 12px;
-  padding: 24px;
-  border: 1px solid rgba(0, 229, 255, 0.1);
-  animation: ${glowAnimation} 3s infinite;
-`
-
-const OverviewGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
 `
 
 const MetricCard = styled.div`
@@ -530,7 +450,7 @@ const DetectionStatus = styled.div`
   color: ${(props) => (props.$status === "active" ? "#06d6a0" : props.$status === "watch" ? "#ffc107" : "#6c757d")};
 `
 
-const HeatMapContainer = styled.div`
+const MapContainer = styled.div`
   background: #1e1e2e;
   border-radius: 12px;
   padding: 24px;
@@ -545,54 +465,101 @@ const HeatMapContainer = styled.div`
   }
 `
 
-const HeatMapGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
-  margin: 20px 0;
-  aspect-ratio: 3/2;
+const MapView = styled.div`
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background: linear-gradient(135deg, #2a2a3a 0%, #1a1a2a 100%);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 229, 255, 0.2);
 `
 
-const HeatMapCell = styled.div`
-  background: ${(props) => {
-    const intensity = props.$intensity
-    if (intensity >= 80) return "rgba(220, 53, 69, 0.8)" // High danger - red
-    if (intensity >= 60) return "rgba(255, 193, 7, 0.8)" // Medium - yellow
-    if (intensity >= 40) return "rgba(255, 152, 0, 0.8)" // Low-medium - orange
-    if (intensity >= 20) return "rgba(6, 214, 160, 0.6)" // Low - green
-    return "rgba(0, 229, 255, 0.3)" // Very low - cyan
-  }};
-  border-radius: 4px;
+const MapBackground = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(0, 229, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.3;
+`
+
+const MapRegion = styled.div`
+  position: absolute;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 10px;
   font-weight: 600;
   color: #ffffff;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  
+  background: ${(props) => {
+    const intensity = props.$intensity
+    if (intensity >= 80)
+      return "radial-gradient(circle, rgba(220, 53, 69, 0.9) 0%, rgba(220, 53, 69, 0.4) 70%, transparent 100%)"
+    if (intensity >= 60)
+      return "radial-gradient(circle, rgba(255, 193, 7, 0.9) 0%, rgba(255, 193, 7, 0.4) 70%, transparent 100%)"
+    if (intensity >= 40)
+      return "radial-gradient(circle, rgba(255, 152, 0, 0.9) 0%, rgba(255, 152, 0, 0.4) 70%, transparent 100%)"
+    if (intensity >= 20)
+      return "radial-gradient(circle, rgba(6, 214, 160, 0.8) 0%, rgba(6, 214, 160, 0.3) 70%, transparent 100%)"
+    return "radial-gradient(circle, rgba(0, 229, 255, 0.6) 0%, rgba(0, 229, 255, 0.2) 70%, transparent 100%)"
+  }};
+
+  width: ${(props) => Math.max(40, props.$intensity * 1.2)}px;
+  height: ${(props) => Math.max(40, props.$intensity * 1.2)}px;
 
   &:hover {
-    transform: scale(1.1);
+    transform: scale(1.2);
     z-index: 10;
-    box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 229, 255, 0.5);
   }
 
   &::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: -100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    animation: ${scanAnimation} 4s infinite;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    animation: ${pulseAnimation} 2s infinite;
   }
 `
 
-const HeatMapLegend = styled.div`
+const MapLabel = styled.div`
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+
+  ${MapRegion}:hover & {
+    opacity: 1;
+  }
+`
+
+const MapLegend = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -604,13 +571,13 @@ const HeatMapLegend = styled.div`
 const LegendScale = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 `
 
-const LegendColorBox = styled.div`
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
+const LegendColorDot = styled.div`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   background: ${(props) => props.$color};
 `
 
@@ -662,9 +629,71 @@ const DispatchButtons = styled.div`
   gap: 8px;
 `
 
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`
+
+const ModalContent = styled.div`
+  background: #1e1e2e;
+  border-radius: 12px;
+  padding: 24px;
+  width: 50%;
+  max-width: 600px;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  color: #00E5FF;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 229, 255, 0.1);
+    transform: translateX(-2px);
+  }
+`
+
+const SystemOverview = styled.div`
+  background: #1e1e2e;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(0, 229, 255, 0.1);
+  flex: 1;
+  overflow: hidden;
+`
+
+const OverviewGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+`
+
 const RotatingIcon = styled(TrendingUp)`
   animation: ${rotateAnimation} 3s linear infinite;
 `;
+
 
 const DataAnalysis = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState("trends")
@@ -713,21 +742,132 @@ const DataAnalysis = ({ onNavigate }) => {
     ],
   })
 
-  const [heatMapData] = useState([
-    { id: "A1", intensity: 25, zone: "North Entrance", cameras: 3 },
-    { id: "A2", intensity: 45, zone: "Parking Lot A", cameras: 2 },
-    { id: "A3", intensity: 15, zone: "Garden Area", cameras: 1 },
-    { id: "A4", intensity: 85, zone: "Main Plaza", cameras: 4 },
-    { id: "A5", intensity: 65, zone: "Food Court", cameras: 3 },
-    { id: "A6", intensity: 30, zone: "East Wing", cameras: 2 },
+  // const [heatMapData] = useState([
+  //   {
+  //     id: "downtown",
+  //     intensity: 85,
+  //     zone: "Downtown District",
+  //     cameras: 12,
+  //     coordinates: { x: 25, y: 30 },
+  //     description: "High-density commercial area with multiple security concerns",
+  //   },
+  //   {
+  //     id: "industrial",
+  //     intensity: 65,
+  //     zone: "Industrial Zone",
+  //     cameras: 8,
+  //     coordinates: { x: 70, y: 20 },
+  //     description: "Manufacturing district with elevated security monitoring",
+  //   },
+  //   {
+  //     id: "residential_north",
+  //     intensity: 35,
+  //     zone: "North Residential",
+  //     cameras: 6,
+  //     coordinates: { x: 40, y: 15 },
+  //     description: "Quiet residential neighborhood with standard surveillance",
+  //   },
+  //   {
+  //     id: "shopping_center",
+  //     intensity: 75,
+  //     zone: "Shopping Center",
+  //     cameras: 15,
+  //     coordinates: { x: 60, y: 45 },
+  //     description: "Major retail hub requiring intensive monitoring",
+  //   },
+  //   {
+  //     id: "university",
+  //     intensity: 45,
+  //     zone: "University Campus",
+  //     cameras: 10,
+  //     coordinates: { x: 20, y: 60 },
+  //     description: "Educational facility with moderate security presence",
+  //   },
+  //   {
+  //     id: "airport",
+  //     intensity: 90,
+  //     zone: "Airport Terminal",
+  //     cameras: 25,
+  //     coordinates: { x: 80, y: 70 },
+  //     description: "Critical infrastructure requiring maximum security",
+  //   },
+  //   {
+  //     id: "park",
+  //     intensity: 25,
+  //     zone: "Central Park",
+  //     cameras: 4,
+  //     coordinates: { x: 45, y: 50 },
+  //     description: "Public recreation area with minimal security needs",
+  //   },
+  //   {
+  //     id: "financial",
+  //     intensity: 80,
+  //     zone: "Financial District",
+  //     cameras: 18,
+  //     coordinates: { x: 30, y: 35 },
+  //     description: "Banking sector with high-value security requirements",
+  //   },
+  //   {
+  //     id: "port",
+  //     intensity: 70,
+  //     zone: "Port Authority",
+  //     cameras: 14,
+  //     coordinates: { x: 85, y: 25 },
+  //     description: "Maritime facility with cargo security monitoring",
+  //   },
+  //   {
+  //     id: "residential_south",
+  //     intensity: 30,
+  //     zone: "South Residential",
+  //     cameras: 5,
+  //     coordinates: { x: 55, y: 80 },
+  //     description: "Suburban area with routine surveillance coverage",
+  //   },
+  // ])
 
-    { id: "B1", intensity: 40, zone: "West Entrance", cameras: 2 },
-    { id: "B2", intensity: 75, zone: "Central Hub", cameras: 5 },
-    { id: "B3", intensity: 55, zone: "Retail Zone", cameras: 3 },
-    { id: "B4", intensity: 90, zone: "Security Checkpoint", cameras: 6 },
-    { id: "B5", intensity: 35, zone: "Quiet Zone", cameras: 1 },
-    { id: "B6", intensity: 20, zone: "Storage Area", cameras: 1 },
-  ])
+
+  const [heatMapData] = useState([
+  {
+    id: "gra",
+    intensity: 85,
+    zone: "GRA Phase 2",
+    cameras: 12,
+    coordinates: { lat: 4.8242, lng: 7.0336 },
+    description: "High-density residential/commercial zone",
+  },
+  {
+    id: "rumuokoro",
+    intensity: 65,
+    zone: "Rumuokoro",
+    cameras: 8,
+    coordinates: { lat: 4.8850, lng: 6.9863 },
+    description: "Major traffic hub with elevated risk",
+  },
+  {
+    id: "trans_amadi",
+    intensity: 75,
+    zone: "Trans Amadi",
+    cameras: 15,
+    coordinates: { lat: 4.8153, lng: 7.0498 },
+    description: "Industrial area requiring intensive monitoring",
+  },
+  {
+    id: "uniport",
+    intensity: 45,
+    zone: "Uniport",
+    cameras: 10,
+    coordinates: { lat: 4.8993, lng: 6.9249 },
+    description: "University campus with moderate security presence",
+  },
+  {
+    id: "airport",
+    intensity: 90,
+    zone: "Port Harcourt Airport",
+    cameras: 25,
+    coordinates: { lat: 5.0154, lng: 6.9497 },
+    description: "Critical infrastructure requiring maximum security",
+  },
+]);
 
   const createPieChart = (data) => {
     const total = data.reduce((sum, item) => sum + item.value, 0)
@@ -887,48 +1027,74 @@ const DataAnalysis = ({ onNavigate }) => {
                 </PieChartSVG>
                 <ChartLegend>
                   {pieChartData.map((item, index) => (
-                    <LegendItem key={index}>
-                      <LegendColor $color={item.color} />
+                    <div key={index} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <div style={{ width: "12px", height: "12px", borderRadius: "2px", background: item.color }} />
                       <span>
                         {item.label}: {item.percentage}%
                       </span>
-                    </LegendItem>
+                    </div>
                   ))}
                 </ChartLegend>
               </ChartContainer>
+
             ) : activeTab === "heatmap" ? (
-              <HeatMapContainer>
-                <FeedHeader>
-                  <MapPin size={16} />
-                  Surveillance Heat Map
-                </FeedHeader>
-                <HeatMapGrid>
-                  {heatMapData.map((zone) => (
-                    <HeatMapCell
-                      key={zone.id}
-                      $intensity={zone.intensity}
-                      onClick={() => handleZoneClick(zone)}
-                      title={`${zone.zone}: ${zone.intensity}% activity`}
-                    >
-                      {zone.id}
-                    </HeatMapCell>
-                  ))}
-                </HeatMapGrid>
-                <HeatMapLegend>
-                  <LegendScale>
-                    <span>Activity Level:</span>
-                    <LegendColorBox $color="rgba(0, 229, 255, 0.3)" />
-                    <span>Low</span>
-                    <LegendColorBox $color="rgba(6, 214, 160, 0.6)" />
-                    <span>Medium</span>
-                    <LegendColorBox $color="rgba(255, 193, 7, 0.8)" />
-                    <span>High</span>
-                    <LegendColorBox $color="rgba(220, 53, 69, 0.8)" />
-                    <span>Critical</span>
-                  </LegendScale>
-                  <span>Click zones to dispatch units</span>
-                </HeatMapLegend>
-              </HeatMapContainer>
+  <MapContainer>
+    <FeedHeader>
+      <MapPin size={16} />
+      Security Heat Map - City Overview
+    </FeedHeader>
+
+    <LeafletMap
+      center={[4.8156, 7.0498]}   // Port Harcourt coords
+      zoom={13}
+      style={{ height: "400px", width: "100%", borderRadius: "12px" }}
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a>'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+
+      {heatMapData.map((region) => (
+        <CircleMarker
+          key={region.id}
+          center={[region.coordinates.lat, region.coordinates.lng]} // switch to real lat/lng
+          radius={Math.max(region.intensity / 10, 6)} // size relative to threat
+          pathOptions={{
+            color:
+              region.intensity >= 80
+                ? "red"
+                : region.intensity >= 60
+                ? "orange"
+                : region.intensity >= 40
+                ? "yellow"
+                : "green",
+            fillOpacity: 0.6,
+          }}
+          eventHandlers={{
+            click: () => handleZoneClick(region),
+          }}
+        >
+          <Popup>
+            <strong>{region.zone}</strong> <br />
+            Threat Level: {region.intensity}% <br />
+            Cameras: {region.cameras} <br />
+            {region.description}
+          </Popup>
+        </CircleMarker>
+      ))}
+    </LeafletMap>
+
+    <MapLegend>
+      <LegendScale>
+        <span>Threat Level:</span>
+        <div><div style={{ width: 8, height: 8, borderRadius: "50%", background: "green" }} /> Low</div>
+        <div><div style={{ width: 8, height: 8, borderRadius: "50%", background: "yellow" }} /> Normal</div>
+        <div><div style={{ width: 8, height: 8, borderRadius: "50%", background: "orange" }} /> Elevated</div>
+        <div><div style={{ width: 8, height: 8, borderRadius: "50%", background: "red" }} /> High</div>
+      </LegendScale>
+      <span>Click regions to deploy response units</span>
+    </MapLegend>
+  </MapContainer>
             ) : (
               <ActivityFeed>
                 <FeedHeader>
@@ -967,6 +1133,7 @@ const DataAnalysis = ({ onNavigate }) => {
                   <div style={{ fontSize: "48px", color: "#00E5FF", marginBottom: "16px" }}>
                     {/* <TrendingUp size={48} style={{ animation: `${rotateAnimation} 3s linear infinite` }} /> */}
                     <RotatingIcon size={48} />
+
                   </div>
                   <div style={{ color: "#a0a0a0", fontSize: "14px" }}>
                     Peak Activity: 12:00 PM
@@ -1065,7 +1232,7 @@ const DataAnalysis = ({ onNavigate }) => {
         <ModalOverlay onClick={() => setShowModal(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
-              <ModalTitle>
+              <div style={{ color: "#00E5FF", fontWeight: "600" }}>
                 {modalData?.type === "chart"
                   ? "Detection Analytics"
                   : modalData?.type === "activity"
@@ -1077,7 +1244,7 @@ const DataAnalysis = ({ onNavigate }) => {
                         : modalData?.type === "heatmap"
                           ? "Zone Surveillance Details"
                           : "System Information"}
-              </ModalTitle>
+              </div>
               <CloseButton onClick={() => setShowModal(false)}>
                 <X size={20} />
               </CloseButton>
@@ -1086,23 +1253,26 @@ const DataAnalysis = ({ onNavigate }) => {
               {modalData?.type === "heatmap" && (
                 <div>
                   <p>
-                    <strong>Zone:</strong> {modalData.item.zone}
+                    <strong>Location:</strong> {modalData.item.zone}
                   </p>
                   <p>
-                    <strong>Activity Level:</strong> {modalData.item.intensity}%
+                    <strong>Threat Level:</strong> {modalData.item.intensity}%
                   </p>
                   <p>
                     <strong>Active Cameras:</strong> {modalData.item.cameras}
                   </p>
                   <p>
+                    <strong>Description:</strong> {modalData.item.description}
+                  </p>
+                  <p>
                     <strong>Risk Assessment:</strong>{" "}
                     {modalData.item.intensity >= 80
-                      ? "Critical - Immediate attention required"
+                      ? "🔴 Critical - Immediate response required"
                       : modalData.item.intensity >= 60
-                        ? "High - Monitor closely"
+                        ? "🟡 High - Enhanced monitoring active"
                         : modalData.item.intensity >= 40
-                          ? "Medium - Standard surveillance"
-                          : "Low - Normal activity"}
+                          ? "🟠 Elevated - Standard security protocols"
+                          : "🟢 Normal - Routine surveillance"}
                   </p>
 
                   <DispatchPanel>
@@ -1247,7 +1417,6 @@ export default DataAnalysis
 
 
 
-
 // "use client"
 
 // import { useState, useEffect } from "react"
@@ -1266,6 +1435,10 @@ export default DataAnalysis
 //   PieChart,
 //   Target,
 //   X,
+//   MapPin,
+//   Plane,
+//   Shield,
+//   Radio,
 // } from "lucide-react"
 
 // const slideInAnimation = keyframes`
@@ -1398,7 +1571,7 @@ export default DataAnalysis
 
 // const MainGrid = styled.div`
 //   display: grid;
-//   grid-template-columns: ${(props) => (props.$activeTab === "trends" ? "1fr 1fr" : "1fr 350px")};
+//   grid-template-columns: ${(props) => (props.$activeTab === "trends" ? "1fr 1fr" : props.$activeTab === "heatmap" ? "1fr 1fr" : "1fr 350px")};
 //   gap: 24px;
 //   min-height: calc(100vh - 200px);
 // `
@@ -1776,14 +1949,137 @@ export default DataAnalysis
 //   color: ${(props) => (props.$status === "active" ? "#06d6a0" : props.$status === "watch" ? "#ffc107" : "#6c757d")};
 // `
 
-// // const rotateAnimation = keyframes`
-// //   from {
-// //     transform: rotate(0deg);
-// //   }
-// //   to {
-// //     transform: rotate(360deg);
-// //   }
-// // `;
+// const HeatMapContainer = styled.div`
+//   background: #1e1e2e;
+//   border-radius: 12px;
+//   padding: 24px;
+//   border: 1px solid rgba(0, 229, 255, 0.1);
+//   animation: ${glowAnimation} 3s infinite;
+//   cursor: pointer;
+//   transition: all 0.3s ease;
+
+//   &:hover {
+//     transform: translateY(-4px);
+//     box-shadow: 0 8px 25px rgba(0, 229, 255, 0.2);
+//   }
+// `
+
+// const HeatMapGrid = styled.div`
+//   display: grid;
+//   grid-template-columns: repeat(6, 1fr);
+//   gap: 8px;
+//   margin: 20px 0;
+//   aspect-ratio: 3/2;
+// `
+
+// const HeatMapCell = styled.div`
+//   background: ${(props) => {
+//     const intensity = props.$intensity
+//     if (intensity >= 80) return "rgba(220, 53, 69, 0.8)" // High danger - red
+//     if (intensity >= 60) return "rgba(255, 193, 7, 0.8)" // Medium - yellow
+//     if (intensity >= 40) return "rgba(255, 152, 0, 0.8)" // Low-medium - orange
+//     if (intensity >= 20) return "rgba(6, 214, 160, 0.6)" // Low - green
+//     return "rgba(0, 229, 255, 0.3)" // Very low - cyan
+//   }};
+//   border-radius: 4px;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
+//   font-size: 10px;
+//   font-weight: 600;
+//   color: #ffffff;
+//   cursor: pointer;
+//   transition: all 0.3s ease;
+//   position: relative;
+//   overflow: hidden;
+
+//   &:hover {
+//     transform: scale(1.1);
+//     z-index: 10;
+//     box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4);
+//   }
+
+//   &::before {
+//     content: '';
+//     position: absolute;
+//     top: 0;
+//     left: -100%;
+//     width: 100%;
+//     height: 100%;
+//     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+//     animation: ${scanAnimation} 4s infinite;
+//   }
+// `
+
+// const HeatMapLegend = styled.div`
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   margin-top: 16px;
+//   font-size: 11px;
+//   color: #a0a0a0;
+// `
+
+// const LegendScale = styled.div`
+//   display: flex;
+//   align-items: center;
+//   gap: 8px;
+// `
+
+// const LegendColorBox = styled.div`
+//   width: 12px;
+//   height: 12px;
+//   border-radius: 2px;
+//   background: ${(props) => props.$color};
+// `
+
+// const DispatchPanel = styled.div`
+//   background: #1e1e2e;
+//   border-radius: 12px;
+//   padding: 20px;
+//   border: 1px solid rgba(0, 229, 255, 0.1);
+//   margin-top: 16px;
+// `
+
+// const DispatchButton = styled.button`
+//   background: ${(props) => (props.$type === "drone" ? "rgba(0, 229, 255, 0.1)" : "rgba(6, 214, 160, 0.1)")};
+//   border: 1px solid ${(props) => (props.$type === "drone" ? "#00E5FF" : "#06d6a0")};
+//   color: ${(props) => (props.$type === "drone" ? "#00E5FF" : "#06d6a0")};
+//   padding: 8px 16px;
+//   border-radius: 6px;
+//   cursor: pointer;
+//   font-size: 12px;
+//   font-weight: 600;
+//   text-transform: uppercase;
+//   letter-spacing: 0.5px;
+//   transition: all 0.3s ease;
+//   display: flex;
+//   align-items: center;
+//   gap: 6px;
+//   margin-right: 8px;
+
+//   &:hover {
+//     background: ${(props) => (props.$type === "drone" ? "rgba(0, 229, 255, 0.2)" : "rgba(6, 214, 160, 0.2)")};
+//     transform: translateY(-2px);
+//   }
+
+//   &:disabled {
+//     opacity: 0.5;
+//     cursor: not-allowed;
+//   }
+// `
+
+// const DispatchInfo = styled.div`
+//   display: flex;
+//   justify-content: space-between;
+//   align-items: center;
+//   margin-bottom: 12px;
+// `
+
+// const DispatchButtons = styled.div`
+//   display: flex;
+//   gap: 8px;
+// `
 
 // const RotatingIcon = styled(TrendingUp)`
 //   animation: ${rotateAnimation} 3s linear infinite;
@@ -1793,6 +2089,8 @@ export default DataAnalysis
 //   const [activeTab, setActiveTab] = useState("trends")
 //   const [showModal, setShowModal] = useState(false)
 //   const [modalData, setModalData] = useState(null)
+//   const [selectedZone, setSelectedZone] = useState(null)
+//   const [dispatchStatus, setDispatchStatus] = useState({})
 
 //   const [activityFeed, setActivityFeed] = useState([])
 
@@ -1834,6 +2132,22 @@ export default DataAnalysis
 //     ],
 //   })
 
+//   const [heatMapData] = useState([
+//     { id: "A1", intensity: 25, zone: "North Entrance", cameras: 3 },
+//     { id: "A2", intensity: 45, zone: "Parking Lot A", cameras: 2 },
+//     { id: "A3", intensity: 15, zone: "Garden Area", cameras: 1 },
+//     { id: "A4", intensity: 85, zone: "Main Plaza", cameras: 4 },
+//     { id: "A5", intensity: 65, zone: "Food Court", cameras: 3 },
+//     { id: "A6", intensity: 30, zone: "East Wing", cameras: 2 },
+
+//     { id: "B1", intensity: 40, zone: "West Entrance", cameras: 2 },
+//     { id: "B2", intensity: 75, zone: "Central Hub", cameras: 5 },
+//     { id: "B3", intensity: 55, zone: "Retail Zone", cameras: 3 },
+//     { id: "B4", intensity: 90, zone: "Security Checkpoint", cameras: 6 },
+//     { id: "B5", intensity: 35, zone: "Quiet Zone", cameras: 1 },
+//     { id: "B6", intensity: 20, zone: "Storage Area", cameras: 1 },
+//   ])
+
 //   const createPieChart = (data) => {
 //     const total = data.reduce((sum, item) => sum + item.value, 0)
 //     let currentAngle = 0
@@ -1866,6 +2180,31 @@ export default DataAnalysis
 //   const handleItemClick = (item, type) => {
 //     setModalData({ item, type })
 //     setShowModal(true)
+//   }
+
+//   const handleZoneClick = (zone) => {
+//     setSelectedZone(zone)
+//     setModalData({ item: zone, type: "heatmap" })
+//     setShowModal(true)
+//   }
+
+//   const handleDispatch = (zoneId, type) => {
+//     setDispatchStatus((prev) => ({
+//       ...prev,
+//       [zoneId]: { type, status: "dispatched", time: new Date().toLocaleTimeString() },
+//     }))
+
+//     // Add to activity feed
+//     const newActivity = {
+//       id: Date.now().toString(),
+//       type: "system",
+//       title: `${type === "drone" ? "Drone" : "Ground Unit"} Dispatched`,
+//       details: `${type === "drone" ? "Surveillance drone" : "Security team"} sent to ${selectedZone?.zone}`,
+//       time: "Just now",
+//     }
+
+//     setActivityFeed((prev) => [newActivity, ...prev.slice(0, 9)])
+//     setShowModal(false)
 //   }
 
 //   useEffect(() => {
@@ -1920,6 +2259,10 @@ export default DataAnalysis
 //           <Target size={16} />
 //           Real-time Tracking
 //         </TabButton>
+//         <TabButton $active={activeTab === "heatmap"} onClick={() => setActiveTab("heatmap")}>
+//           <MapPin size={16} />
+//           Heat Map
+//         </TabButton>
 //       </NavigationTabs>
 
 //       <ContentContainer>
@@ -1972,6 +2315,39 @@ export default DataAnalysis
 //                   ))}
 //                 </ChartLegend>
 //               </ChartContainer>
+//             ) : activeTab === "heatmap" ? (
+//               <HeatMapContainer>
+//                 <FeedHeader>
+//                   <MapPin size={16} />
+//                   Surveillance Heat Map
+//                 </FeedHeader>
+//                 <HeatMapGrid>
+//                   {heatMapData.map((zone) => (
+//                     <HeatMapCell
+//                       key={zone.id}
+//                       $intensity={zone.intensity}
+//                       onClick={() => handleZoneClick(zone)}
+//                       title={`${zone.zone}: ${zone.intensity}% activity`}
+//                     >
+//                       {zone.id}
+//                     </HeatMapCell>
+//                   ))}
+//                 </HeatMapGrid>
+//                 <HeatMapLegend>
+//                   <LegendScale>
+//                     <span>Activity Level:</span>
+//                     <LegendColorBox $color="rgba(0, 229, 255, 0.3)" />
+//                     <span>Low</span>
+//                     <LegendColorBox $color="rgba(6, 214, 160, 0.6)" />
+//                     <span>Medium</span>
+//                     <LegendColorBox $color="rgba(255, 193, 7, 0.8)" />
+//                     <span>High</span>
+//                     <LegendColorBox $color="rgba(220, 53, 69, 0.8)" />
+//                     <span>Critical</span>
+//                   </LegendScale>
+//                   <span>Click zones to dispatch units</span>
+//                 </HeatMapLegend>
+//               </HeatMapContainer>
 //             ) : (
 //               <ActivityFeed>
 //                 <FeedHeader>
@@ -2006,28 +2382,57 @@ export default DataAnalysis
 //                   <BarChart3 size={16} />
 //                   Hourly Trends
 //                 </FeedHeader>
-//                 {/* <div style={{ textAlign: "center", padding: "40px 0" }}>
+//                 <div style={{ textAlign: "center", padding: "40px 0" }}>
 //                   <div style={{ fontSize: "48px", color: "#00E5FF", marginBottom: "16px" }}>
-//                     <TrendingUp size={48} style={{ animation: `${rotateAnimation} 3s linear infinite` }} />
+//                     {/* <TrendingUp size={48} style={{ animation: `${rotateAnimation} 3s linear infinite` }} /> */}
+                    // <RotatingIcon size={48} />
 //                   </div>
 //                   <div style={{ color: "#a0a0a0", fontSize: "14px" }}>
 //                     Peak Activity: 12:00 PM
 //                     <br />
 //                     Average Detection Rate: 28/hour
-//                     <br /> */}
-//                     <div style={{ textAlign: "center", padding: "40px 0" }}>
-//   <div style={{ fontSize: "48px", color: "#00E5FF", marginBottom: "16px" }}>
-//     <RotatingIcon size={48} />
-//   </div>
-//   <div style={{ color: "#a0a0a0", fontSize: "14px" }}>
-//     Peak Activity: 12:00 PM
-//     <br />
-//     Average Detection Rate: 28/hour
-//     <br />
+//                     <br />
 //                     Trend: ↗ +15% from yesterday
 //                   </div>
 //                 </div>
 //               </ChartContainer>
+//             ) : activeTab === "heatmap" ? (
+//               <DetectionPanel>
+//                 <DetectionHeader>
+//                   <Radio size={16} />
+//                   Active Dispatches
+//                 </DetectionHeader>
+//                 <DetectionList>
+//                   {Object.entries(dispatchStatus).map(([zoneId, dispatch]) => {
+//                     const zone = heatMapData.find((z) => z.id === zoneId)
+//                     return (
+//                       <DetectionItem key={zoneId}>
+//                         <DetectionInfo>
+//                           <DetectionId>{zone?.zone}</DetectionId>
+//                           <DetectionMeta>
+//                             {dispatch.type === "drone" ? "Drone Unit" : "Ground Team"} • {dispatch.time}
+//                           </DetectionMeta>
+//                         </DetectionInfo>
+//                         <DetectionStatus $status="active">{dispatch.status}</DetectionStatus>
+//                       </DetectionItem>
+//                     )
+//                   })}
+//                   {Object.keys(dispatchStatus).length === 0 && (
+//                     <div
+//                       style={{
+//                         textAlign: "center",
+//                         color: "#a0a0a0",
+//                         padding: "40px 20px",
+//                         fontSize: "14px",
+//                       }}
+//                     >
+//                       No active dispatches
+//                       <br />
+//                       <span style={{ fontSize: "12px" }}>Click on heat map zones to deploy units</span>
+//                     </div>
+//                   )}
+//                 </DetectionList>
+//               </DetectionPanel>
 //             ) : (
 //               <>
 //                 <DetectionPanel>
@@ -2088,13 +2493,77 @@ export default DataAnalysis
 //                       ? "License Plate Details"
 //                       : modalData?.type === "face"
 //                         ? "Individual Details"
-//                         : "System Information"}
+//                         : modalData?.type === "heatmap"
+//                           ? "Zone Surveillance Details"
+//                           : "System Information"}
 //               </ModalTitle>
 //               <CloseButton onClick={() => setShowModal(false)}>
 //                 <X size={20} />
 //               </CloseButton>
 //             </ModalHeader>
 //             <div style={{ color: "#a0a0a0", lineHeight: "1.6" }}>
+//               {modalData?.type === "heatmap" && (
+//                 <div>
+//                   <p>
+//                     <strong>Zone:</strong> {modalData.item.zone}
+//                   </p>
+//                   <p>
+//                     <strong>Activity Level:</strong> {modalData.item.intensity}%
+//                   </p>
+//                   <p>
+//                     <strong>Active Cameras:</strong> {modalData.item.cameras}
+//                   </p>
+//                   <p>
+//                     <strong>Risk Assessment:</strong>{" "}
+//                     {modalData.item.intensity >= 80
+//                       ? "Critical - Immediate attention required"
+//                       : modalData.item.intensity >= 60
+//                         ? "High - Monitor closely"
+//                         : modalData.item.intensity >= 40
+//                           ? "Medium - Standard surveillance"
+//                           : "Low - Normal activity"}
+//                   </p>
+
+//                   <DispatchPanel>
+//                     <DispatchInfo>
+//                       <span style={{ color: "#00E5FF", fontWeight: "600" }}>Deploy Response Unit:</span>
+//                     </DispatchInfo>
+//                     <DispatchButtons>
+//                       <DispatchButton
+//                         $type="drone"
+//                         onClick={() => handleDispatch(modalData.item.id, "drone")}
+//                         disabled={dispatchStatus[modalData.item.id]?.type === "drone"}
+//                       >
+//                         <Plane size={14} />
+//                         Deploy Drone
+//                       </DispatchButton>
+//                       <DispatchButton
+//                         $type="ground"
+//                         onClick={() => handleDispatch(modalData.item.id, "ground")}
+//                         disabled={dispatchStatus[modalData.item.id]?.type === "ground"}
+//                       >
+//                         <Shield size={14} />
+//                         Send Ground Unit
+//                       </DispatchButton>
+//                     </DispatchButtons>
+//                     {dispatchStatus[modalData.item.id] && (
+//                       <div
+//                         style={{
+//                           marginTop: "12px",
+//                           padding: "8px",
+//                           background: "rgba(6, 214, 160, 0.1)",
+//                           borderRadius: "4px",
+//                           fontSize: "12px",
+//                           color: "#06d6a0",
+//                         }}
+//                       >
+//                         ✓ {dispatchStatus[modalData.item.id].type === "drone" ? "Drone" : "Ground unit"} dispatched at{" "}
+//                         {dispatchStatus[modalData.item.id].time}
+//                       </div>
+//                     )}
+//                   </DispatchPanel>
+//                 </div>
+//               )}
 //               {modalData?.type === "chart" && (
 //                 <div>
 //                   <p>Real-time detection distribution across all active surveillance systems.</p>
@@ -2180,630 +2649,6 @@ export default DataAnalysis
 //           </ModalContent>
 //         </ModalOverlay>
 //       )}
-//     </Container>
-//   )
-// }
-
-// export default DataAnalysis
-
-
-
-
-
-
-
-
-
-
-
-
-
-// "use client"
-
-
-// import { useState, useEffect } from "react"
-// import styled, { keyframes } from "styled-components"
-// import { ArrowLeft, Activity, Camera, Users, Car, Zap, AlertTriangle, CheckCircle, Cpu } from "lucide-react"
-
-// const pulseAnimation = keyframes`
-//   0% { opacity: 0.4; transform: scale(1); }
-//   50% { opacity: 1; transform: scale(1.05); }
-//   100% { opacity: 0.4; transform: scale(1); }
-// `
-
-// const scanAnimation = keyframes`
-//   0% { transform: translateX(-100%); }
-//   100% { transform: translateX(100%); }
-// `
-
-// const dataFlowAnimation = keyframes`
-//   0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-//   50% { opacity: 1; }
-//   100% { transform: translateY(-20px) rotate(180deg); opacity: 0; }
-// `
-
-// const glowAnimation = keyframes`
-//   0% { box-shadow: 0 0 5px rgba(0, 229, 255, 0.3); }
-//   50% { box-shadow: 0 0 20px rgba(0, 229, 255, 0.6), 0 0 30px rgba(0, 229, 255, 0.3); }
-//   100% { box-shadow: 0 0 5px rgba(0, 229, 255, 0.3); }
-// `
-
-// const Container = styled.div`
-//   min-height: 100vh;
-//   background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-//   color: #ffffff;
-//   padding: 24px;
-//   overflow-x: hidden;
-// `
-
-// const Header = styled.div`
-//   display: flex;
-//   align-items: center;
-//   gap: 16px;
-//   margin-bottom: 32px;
-//   padding-bottom: 16px;
-//   border-bottom: 1px solid rgba(0, 229, 255, 0.2);
-// `
-
-// const BackButton = styled.button`
-//   background: none;
-//   border: none;
-//   color: #00E5FF;
-//   cursor: pointer;
-//   padding: 8px;
-//   border-radius: 8px;
-//   transition: all 0.2s ease;
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-
-//   &:hover {
-//     background: rgba(0, 229, 255, 0.1);
-//     transform: translateX(-2px);
-//   }
-// `
-
-// const Title = styled.h1`
-//   font-size: 32px;
-//   font-weight: 700;
-//   color: #ffffff;
-//   text-transform: uppercase;
-//   letter-spacing: 1px;
-//   margin: 0;
-//   display: flex;
-//   align-items: center;
-//   gap: 12px;
-// `
-
-// const StatusIndicator = styled.div`
-//   width: 12px;
-//   height: 12px;
-//   background: #06d6a0;
-//   border-radius: 50%;
-//   animation: ${pulseAnimation} 2s infinite;
-// `
-
-// const MainGrid = styled.div`
-//   display: grid;
-//   grid-template-columns: 1fr 350px;
-//   gap: 24px;
-//   height: calc(100vh - 120px);
-// `
-
-// const LeftPanel = styled.div`
-//   display: flex;
-//   flex-direction: column;
-//   gap: 24px;
-// `
-
-// const RightPanel = styled.div`
-//   display: flex;
-//   flex-direction: column;
-//   gap: 16px;
-// `
-
-// const SystemOverview = styled.div`
-//   background: #1e1e2e;
-//   border-radius: 12px;
-//   padding: 24px;
-//   border: 1px solid rgba(0, 229, 255, 0.1);
-//   animation: ${glowAnimation} 3s infinite;
-// `
-
-// const OverviewGrid = styled.div`
-//   display: grid;
-//   grid-template-columns: repeat(4, 1fr);
-//   gap: 16px;
-//   margin-bottom: 24px;
-// `
-
-// const MetricCard = styled.div`
-//   background: rgba(0, 229, 255, 0.05);
-//   border-radius: 8px;
-//   padding: 16px;
-//   text-align: center;
-//   border: 1px solid rgba(0, 229, 255, 0.1);
-//   position: relative;
-//   overflow: hidden;
-
-//   &::before {
-//     content: '';
-//     position: absolute;
-//     top: 0;
-//     left: -100%;
-//     width: 100%;
-//     height: 2px;
-//     background: linear-gradient(90deg, transparent, #00E5FF, transparent);
-//     animation: ${scanAnimation} 3s infinite;
-//   }
-// `
-
-// const MetricValue = styled.div`
-//   font-size: 24px;
-//   font-weight: 700;
-//   color: #00E5FF;
-//   margin-bottom: 4px;
-// `
-
-// const MetricLabel = styled.div`
-//   font-size: 12px;
-//   color: #a0a0a0;
-//   text-transform: uppercase;
-//   letter-spacing: 0.5px;
-// `
-
-// const ActivityFeed = styled.div`
-//   background: #1e1e2e;
-//   border-radius: 12px;
-//   padding: 20px;
-//   border: 1px solid rgba(0, 229, 255, 0.1);
-//   flex: 1;
-//   overflow: hidden;
-// `
-
-// const FeedHeader = styled.div`
-//   display: flex;
-//   align-items: center;
-//   gap: 8px;
-//   margin-bottom: 16px;
-//   color: #00E5FF;
-//   font-weight: 600;
-//   text-transform: uppercase;
-//   letter-spacing: 0.5px;
-// `
-
-// const FeedList = styled.div`
-//   height: 300px;
-//   overflow-y: auto;
-  
-//   &::-webkit-scrollbar {
-//     width: 4px;
-//   }
-  
-//   &::-webkit-scrollbar-track {
-//     background: rgba(0, 229, 255, 0.1);
-//   }
-  
-//   &::-webkit-scrollbar-thumb {
-//     background: #00E5FF;
-//     border-radius: 2px;
-//   }
-// `
-
-// const FeedItem = styled.div`
-//   display: flex;
-//   align-items: center;
-//   gap: 12px;
-//   padding: 12px;
-//   margin-bottom: 8px;
-//   background: rgba(0, 229, 255, 0.03);
-//   border-radius: 8px;
-//   border-left: 3px solid ${(props) =>
-//     props.$type === "face"
-//       ? "#06d6a0"
-//       : props.$type === "plate"
-//         ? "#ffc107"
-//         : props.$type === "alert"
-//           ? "#dc3545"
-//           : "#00E5FF"};
-//   animation: ${dataFlowAnimation} 0.5s ease-out;
-// `
-
-// const FeedIcon = styled.div`
-//   width: 32px;
-//   height: 32px;
-//   border-radius: 50%;
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-//   background: ${(props) =>
-//     props.$type === "face"
-//       ? "rgba(6, 214, 160, 0.2)"
-//       : props.$type === "plate"
-//         ? "rgba(255, 193, 7, 0.2)"
-//         : props.$type === "alert"
-//           ? "rgba(220, 53, 69, 0.2)"
-//           : "rgba(0, 229, 255, 0.2)"};
-//   color: ${(props) =>
-//     props.$type === "face"
-//       ? "#06d6a0"
-//       : props.$type === "plate"
-//         ? "#ffc107"
-//         : props.$type === "alert"
-//           ? "#dc3545"
-//           : "#00E5FF"};
-// `
-
-// const FeedContent = styled.div`
-//   flex: 1;
-// `
-
-// const FeedTitle = styled.div`
-//   font-weight: 600;
-//   color: #ffffff;
-//   margin-bottom: 2px;
-// `
-
-// const FeedDetails = styled.div`
-//   font-size: 12px;
-//   color: #a0a0a0;
-// `
-
-// const FeedTime = styled.div`
-//   font-size: 11px;
-//   color: #6c757d;
-// `
-
-// const DetectionPanel = styled.div`
-//   background: #1e1e2e;
-//   border-radius: 12px;
-//   padding: 20px;
-//   border: 1px solid rgba(0, 229, 255, 0.1);
-//   height: 300px;
-// `
-
-// const DetectionHeader = styled.div`
-//   display: flex;
-//   align-items: center;
-//   justify-content: between;
-//   gap: 8px;
-//   margin-bottom: 16px;
-//   color: #00E5FF;
-//   font-weight: 600;
-//   text-transform: uppercase;
-//   letter-spacing: 0.5px;
-// `
-
-// const DetectionList = styled.div`
-//   height: 220px;
-//   overflow-y: auto;
-  
-//   &::-webkit-scrollbar {
-//     width: 4px;
-//   }
-  
-//   &::-webkit-scrollbar-track {
-//     background: rgba(0, 229, 255, 0.1);
-//   }
-  
-//   &::-webkit-scrollbar-thumb {
-//     background: #00E5FF;
-//     border-radius: 2px;
-//   }
-// `
-
-// const DetectionItem = styled.div`
-//   display: flex;
-//   align-items: center;
-//   justify-content: space-between;
-//   padding: 8px 12px;
-//   margin-bottom: 6px;
-//   background: rgba(0, 229, 255, 0.03);
-//   border-radius: 6px;
-//   border: 1px solid rgba(0, 229, 255, 0.1);
-//   transition: all 0.2s ease;
-
-//   &:hover {
-//     background: rgba(0, 229, 255, 0.08);
-//     border-color: rgba(0, 229, 255, 0.3);
-//   }
-// `
-
-// const DetectionInfo = styled.div`
-//   display: flex;
-//   flex-direction: column;
-// `
-
-// const DetectionId = styled.div`
-//   font-weight: 600;
-//   color: #ffffff;
-//   font-size: 14px;
-// `
-
-// const DetectionMeta = styled.div`
-//   font-size: 11px;
-//   color: #a0a0a0;
-// `
-
-// const DetectionStatus = styled.div`
-//   padding: 4px 8px;
-//   border-radius: 4px;
-//   font-size: 10px;
-//   font-weight: 600;
-//   text-transform: uppercase;
-//   background: ${(props) =>
-//     props.$status === "active"
-//       ? "rgba(6, 214, 160, 0.2)"
-//       : props.$status === "watch"
-//         ? "rgba(255, 193, 7, 0.2)"
-//         : "rgba(108, 117, 125, 0.2)"};
-//   color: ${(props) => (props.$status === "active" ? "#06d6a0" : props.$status === "watch" ? "#ffc107" : "#6c757d")};
-// `
-
-// const CameraGrid = styled.div`
-//   background: #1e1e2e;
-//   border-radius: 12px;
-//   padding: 20px;
-//   border: 1px solid rgba(0, 229, 255, 0.1);
-//   flex: 1;
-// `
-
-// const CameraHeader = styled.div`
-//   display: flex;
-//   align-items: center;
-//   gap: 8px;
-//   margin-bottom: 16px;
-//   color: #00E5FF;
-//   font-weight: 600;
-//   text-transform: uppercase;
-//   letter-spacing: 0.5px;
-// `
-
-// const CameraGridContainer = styled.div`
-//   display: grid;
-//   grid-template-columns: repeat(3, 1fr);
-//   gap: 12px;
-//   height: 200px;
-// `
-
-// const CameraFeed = styled.div`
-//   background: #000;
-//   border-radius: 8px;
-//   border: 1px solid rgba(0, 229, 255, 0.2);
-//   position: relative;
-//   overflow: hidden;
-  
-//   &::before {
-//     content: '';
-//     position: absolute;
-//     top: 0;
-//     left: 0;
-//     right: 0;
-//     bottom: 0;
-//     background: linear-gradient(45deg, transparent 30%, rgba(0, 229, 255, 0.1) 50%, transparent 70%);
-//     animation: ${scanAnimation} 4s infinite;
-//   }
-// `
-
-// const CameraImage = styled.img`
-//   width: 100%;
-//   height: 100%;
-//   object-fit: cover;
-// `
-
-// const CameraOverlay = styled.div`
-//   position: absolute;
-//   bottom: 0;
-//   left: 0;
-//   right: 0;
-//   background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-//   padding: 8px;
-//   color: #00E5FF;
-//   font-size: 10px;
-//   font-weight: 600;
-// `
-
-
-
-// // const DataAnalysis: React.FC<DataAnalysisProps> = ({ onNavigate }) => {
-//     const DataAnalysis = ({ onNavigate }) => {
-
-//   const [activityFeed, setActivityFeed] = useState([])
-
-
-//   const [detectedPlates, setDetectedPlates] = useState([
-//     { id: "ABC-123", location: "Camera 01", status: "active", time: "2 min ago" },
-//     { id: "XYZ-789", location: "Camera 05", status: "watch", time: "5 min ago" },
-//     { id: "DEF-456", location: "Camera 12", status: "cleared", time: "8 min ago" },
-//     { id: "GHI-321", location: "Camera 03", status: "active", time: "12 min ago" },
-//     { id: "JKL-654", location: "Camera 08", status: "watch", time: "15 min ago" },
-//   ])
-
-//   const [detectedFaces, setDetectedFaces] = useState([
-//     { id: "Person-001", name: "John Smith", status: "active", time: "1 min ago" },
-//     { id: "Person-047", name: "Unknown", status: "watch", time: "4 min ago" },
-//     { id: "Person-023", name: "Jane Doe", status: "cleared", time: "7 min ago" },
-//     { id: "Person-089", name: "Mike Johnson", status: "active", time: "10 min ago" },
-//     { id: "Person-156", name: "Unknown", status: "watch", time: "13 min ago" },
-//   ])
-
-//   const [metrics, setMetrics] = useState({
-//     activeCameras: 24,
-//     detectionsToday: 156,
-//     systemUptime: 98.5,
-//     activeAlerts: 3,
-//   })
-
-//   useEffect(() => {
-//     const interval = setInterval(() => {
-//       // Simulate real-time activity
-//       const activities = [
-//         { type: "face", title: "Face Detected", details: "Unknown individual at Camera 05" },
-//         { type: "plate", title: "License Plate Scanned", details: "ABC-123 detected at Main Entrance" },
-//         { type: "alert", title: "Security Alert", details: "Suspicious activity detected" },
-//         { type: "system", title: "System Update", details: "Camera 12 back online" },
-//       ]
-
-//       const randomActivity = activities[Math.floor(Math.random() * activities.length)]
-//       const newActivity = {
-//         id: Date.now().toString(),
-//         ...randomActivity,
-//         time: "Just now",
-//       }
-
-//       setActivityFeed((prev) => [newActivity, ...prev.slice(0, 9)])
-
-//       // Update metrics
-//       setMetrics((prev) => ({
-//         ...prev,
-//         detectionsToday: prev.detectionsToday + Math.floor(Math.random() * 3),
-//         activeAlerts: Math.max(0, prev.activeAlerts + (Math.random() > 0.7 ? 1 : -1)),
-//       }))
-//     }, 3000)
-
-//     return () => clearInterval(interval)
-//   }, [])
-
-//   return (
-//     <Container>
-//       <Header>
-//         <BackButton onClick={() => onNavigate("dashboard")}>
-//           <ArrowLeft size={20} />
-//         </BackButton>
-//         <Title>
-//           <Cpu size={32} />
-//           Data Analysis Engine
-//           <StatusIndicator />
-//         </Title>
-//       </Header>
-
-//       <MainGrid>
-//         <LeftPanel>
-//           <SystemOverview>
-//             <FeedHeader>
-//               <Activity size={16} />
-//               System Overview
-//             </FeedHeader>
-//             <OverviewGrid>
-//               <MetricCard>
-//                 <MetricValue>{metrics.activeCameras}</MetricValue>
-//                 <MetricLabel>Active Cameras</MetricLabel>
-//               </MetricCard>
-//               <MetricCard>
-//                 <MetricValue>{metrics.detectionsToday}</MetricValue>
-//                 <MetricLabel>Detections Today</MetricLabel>
-//               </MetricCard>
-//               <MetricCard>
-//                 <MetricValue>{metrics.systemUptime}%</MetricValue>
-//                 <MetricLabel>System Uptime</MetricLabel>
-//               </MetricCard>
-//               <MetricCard>
-//                 <MetricValue>{metrics.activeAlerts}</MetricValue>
-//                 <MetricLabel>Active Alerts</MetricLabel>
-//               </MetricCard>
-//             </OverviewGrid>
-//           </SystemOverview>
-
-//           <CameraGrid>
-//             <CameraHeader>
-//               <Camera size={16} />
-//               Live Camera Feeds
-//             </CameraHeader>
-//             <CameraGridContainer>
-//               <CameraFeed>
-//                 <CameraImage src="/traffic-camera-view-with-cars.jpg" alt="Camera 01" />
-//                 <CameraOverlay>CAM-01 • ACTIVE</CameraOverlay>
-//               </CameraFeed>
-//               <CameraFeed>
-//                 <CameraImage src="/highway-surveillance-camera.jpg" alt="Camera 02" />
-//                 <CameraOverlay>CAM-02 • ACTIVE</CameraOverlay>
-//               </CameraFeed>
-//               <CameraFeed>
-//                 <CameraImage src="/parking-lot-security-camera.png" alt="Camera 03" />
-//                 <CameraOverlay>CAM-03 • ACTIVE</CameraOverlay>
-//               </CameraFeed>
-//               <CameraFeed>
-//                 <CameraImage src="/intersection-traffic-camera.jpg" alt="Camera 04" />
-//                 <CameraOverlay>CAM-04 • ACTIVE</CameraOverlay>
-//               </CameraFeed>
-//               <CameraFeed>
-//                 <CameraImage src="/toll-booth-camera-view.jpg" alt="Camera 05" />
-//                 <CameraOverlay>CAM-05 • ACTIVE</CameraOverlay>
-//               </CameraFeed>
-//               <CameraFeed>
-//                 <CameraImage src="/bridge-traffic-monitoring.jpg" alt="Camera 06" />
-//                 <CameraOverlay>CAM-06 • ACTIVE</CameraOverlay>
-//               </CameraFeed>
-//             </CameraGridContainer>
-//           </CameraGrid>
-
-//           <ActivityFeed>
-//             <FeedHeader>
-//               <Zap size={16} />
-//               Real-Time Activity Feed
-//             </FeedHeader>
-//             <FeedList>
-//               {activityFeed.map((item) => (
-//                 <FeedItem key={item.id} $type={item.type}>
-//                   <FeedIcon $type={item.type}>
-//                     {item.type === "face" && <Users size={16} />}
-//                     {item.type === "plate" && <Car size={16} />}
-//                     {item.type === "alert" && <AlertTriangle size={16} />}
-//                     {item.type === "system" && <CheckCircle size={16} />}
-//                   </FeedIcon>
-//                   <FeedContent>
-//                     <FeedTitle>{item.title}</FeedTitle>
-//                     <FeedDetails>{item.details}</FeedDetails>
-//                   </FeedContent>
-//                   <FeedTime>{item.time}</FeedTime>
-//                 </FeedItem>
-//               ))}
-//             </FeedList>
-//           </ActivityFeed>
-//         </LeftPanel>
-
-//         <RightPanel>
-//           <DetectionPanel>
-//             <DetectionHeader>
-//               <Car size={16} />
-//               Detected Plates
-//             </DetectionHeader>
-//             <DetectionList>
-//               {detectedPlates.map((plate) => (
-//                 <DetectionItem key={plate.id}>
-//                   <DetectionInfo>
-//                     <DetectionId>{plate.id}</DetectionId>
-//                     <DetectionMeta>
-//                       {plate.location} • {plate.time}
-//                     </DetectionMeta>
-//                   </DetectionInfo>
-//                   <DetectionStatus $status={plate.status}>{plate.status}</DetectionStatus>
-//                 </DetectionItem>
-//               ))}
-//             </DetectionList>
-//           </DetectionPanel>
-
-//           <DetectionPanel>
-//             <DetectionHeader>
-//               <Users size={16} />
-//               Identified Individuals
-//             </DetectionHeader>
-//             <DetectionList>
-//               {detectedFaces.map((face) => (
-//                 <DetectionItem key={face.id}>
-//                   <DetectionInfo>
-//                     <DetectionId>{face.name}</DetectionId>
-//                     <DetectionMeta>
-//                       {face.id} • {face.time}
-//                     </DetectionMeta>
-//                   </DetectionInfo>
-//                   <DetectionStatus $status={face.status}>{face.status}</DetectionStatus>
-//                 </DetectionItem>
-//               ))}
-//             </DetectionList>
-//           </DetectionPanel>
-//         </RightPanel>
-//       </MainGrid>
 //     </Container>
 //   )
 // }
